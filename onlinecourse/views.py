@@ -169,41 +169,25 @@ def submit(request, course_id):
         submission_id=submission.id
     )
 def show_exam_result(request, course_id, submission_id):
-    from django.shortcuts import get_object_or_404
-    from .models import Course, Submission
-
     course = get_object_or_404(Course, pk=course_id)
     submission = get_object_or_404(Submission, pk=submission_id)
 
     selected_choices = submission.choices.all()
 
-    total_score = 0
-    total_possible = 0
+    correct = 0
+    total = course.question_set.count()
 
-    question_results = []
+    for choice in selected_choices:
+        if choice.is_correct:
+            correct += 1
 
-    for question in course.question_set.all():
-        total_possible += question.grade
+    score = int((correct / total) * 100) if total > 0 else 0
 
-        selected_ids = [choice.id for choice in selected_choices]
-
-        is_correct = question.is_get_score(selected_ids)
-
-        if is_correct:
-            total_score += question.grade
-
-        question_results.append({
-            'question': question,
-            'is_correct': is_correct
-        })
-
-    context = {
+    return render(request, 'onlinecourse/exam_result_bootstrap.html', {
         'course': course,
-        'score': total_score,
-        'total': total_possible,
-        'question_results': question_results
-    }
-
+        'score': score,
+        'total': total
+    })
     return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
 # <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
 # you may implement it based on the following logic:
